@@ -5,31 +5,28 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// Route principale — génère les recettes
 app.post('/recipes', async (req, res) => {
   const { prompt } = req.body
-
-  if (!prompt) {
-    return res.status(400).json({ error: 'Prompt manquant' })
-  }
+  if (!prompt) return res.status(400).json({ error: 'Prompt manquant' })
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'llama3-8b-8192',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
     })
 
     const data = await response.json()
-    res.json(data)
+    // Reformater pour que l'app comprenne la réponse
+    const text = data.choices?.[0]?.message?.content || ''
+    res.json({ content: [{ type: 'text', text }] })
 
   } catch (error) {
     console.error('Erreur API:', error)
@@ -37,7 +34,6 @@ app.post('/recipes', async (req, res) => {
   }
 })
 
-// Route de test — pour vérifier que le serveur fonctionne
 app.get('/', (req, res) => {
   res.json({ status: 'FrigoMalyn serveur actif ✓' })
 })
